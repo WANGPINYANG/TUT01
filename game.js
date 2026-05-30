@@ -1,4 +1,4 @@
-// 8-Bit 類瑪利歐遊戲核心 logic (9 關卡版本)
+// 8-Bit 類瑪利歐遊戲核心 logic (9 關卡經典 Goomba 版本)
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -307,26 +307,21 @@ class Powerup {
     }
 }
 
-// 敵人
+// 敵人 (經典 Goomba)
 class Enemy {
-    constructor(x, y, type = "goomba") {
+    constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.type = type;
         this.width = 16;
-        this.height = type === "flying" ? 20 : 16;
-        
-        this.vx = type === "rushing" ? -0.4 : -0.5;
+        this.height = 16;
+        this.vx = -0.5;
         this.vy = 0;
         this.isDead = false;
         this.deadTimer = 0;
-        
         this.walkFrame = 0;
-        this.startY = y;
-        this.chargeState = "normal";
     }
 
-    update(blocks, player) {
+    update(blocks) {
         if (this.isDead) {
             this.deadTimer++;
             if (this.vy !== 0 || this.vx !== 0) {
@@ -339,45 +334,11 @@ class Enemy {
 
         this.walkFrame = (this.walkFrame + 0.1) % 2;
 
-        if (this.type === "flying") {
-            this.vy = 0;
-            this.y = this.startY + Math.sin(Date.now() / 220) * 20;
-            this.x += this.vx;
-            this.resolveBlockCollisions(blocks, "horizontal");
-        } else if (this.type === "rushing") {
-            const dx = player.x - this.x;
-            const dy = player.y - this.y;
-
-            if (this.chargeState === "normal") {
-                this.vy += GRAVITY;
-                this.x += this.vx;
-                this.resolveBlockCollisions(blocks, "horizontal");
-                this.y += this.vy;
-                this.resolveBlockCollisions(blocks, "vertical");
-
-                if (Math.abs(dx) < 130 && Math.abs(dy) < 32 && !player.isDead) {
-                    this.chargeState = "charging";
-                    this.vx = dx > 0 ? 1.5 : -1.5;
-                }
-            } else if (this.chargeState === "charging") {
-                this.vy += GRAVITY;
-                this.x += this.vx;
-                this.resolveBlockCollisions(blocks, "horizontal");
-                this.y += this.vy;
-                this.resolveBlockCollisions(blocks, "vertical");
-
-                if (Math.abs(dx) > 180 || player.isDead) {
-                    this.chargeState = "normal";
-                    this.vx = this.vx > 0 ? 0.4 : -0.4;
-                }
-            }
-        } else {
-            this.vy += GRAVITY;
-            this.x += this.vx;
-            this.resolveBlockCollisions(blocks, "horizontal");
-            this.y += this.vy;
-            this.resolveBlockCollisions(blocks, "vertical");
-        }
+        this.vy += GRAVITY;
+        this.x += this.vx;
+        this.resolveBlockCollisions(blocks, "horizontal");
+        this.y += this.vy;
+        this.resolveBlockCollisions(blocks, "vertical");
     }
 
     resolveBlockCollisions(blocks, direction) {
@@ -433,52 +394,21 @@ class Enemy {
         const walkOffset = Math.floor(this.walkFrame) === 0 ? 0 : 1;
         const mainColor = theme === "underground" ? "#0088fc" : "#c84c0c";
 
-        if (this.type === "flying") {
-            ctx.fillStyle = "#e60012";
-            ctx.fillRect(drawX + 2, drawY + 4, 12, 12);
-            ctx.fillStyle = "#fcbcb0";
-            ctx.fillRect(drawX + 4, drawY + 6, 8, 8);
-            
-            ctx.fillStyle = "#ffffff";
-            const wingY = walkOffset === 0 ? drawY : drawY - 4;
-            ctx.fillRect(drawX - 2, wingY + 4, 4, 6);
-            ctx.fillRect(drawX + 14, wingY + 4, 4, 6);
-        } else if (this.type === "rushing") {
-            ctx.fillStyle = this.chargeState === "charging" ? "#ff2200" : "#a81000";
-            ctx.fillRect(drawX, drawY, 16, 12);
-            
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(drawX + 3, drawY - 2, 2, 2);
-            ctx.fillRect(drawX + 11, drawY - 2, 2, 2);
-            ctx.fillRect(drawX + 7, drawY + 2, 2, 2);
-
-            ctx.fillStyle = "#ffe000";
-            ctx.fillRect(drawX + 2, drawY + 6, 3, 3);
-            ctx.fillRect(drawX + 11, drawY + 6, 3, 3);
-            ctx.fillStyle = "#000";
-            ctx.fillRect(drawX + 3, drawY + 7, 1, 1);
-            ctx.fillRect(drawX + 12, drawY + 7, 1, 1);
-
-            ctx.fillStyle = "#5c5c5c";
-            ctx.fillRect(drawX + 2, drawY + 12, 3, 4);
-            ctx.fillRect(drawX + 11, drawY + 12, 3, 4);
+        ctx.fillStyle = mainColor;
+        ctx.fillRect(drawX + 2, drawY, 12, 4);
+        ctx.fillRect(drawX, drawY + 4, 16, 4);
+        ctx.fillStyle = "#fcbcb0";
+        ctx.fillRect(drawX + 3, drawY + 8, 10, 5);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(drawX + 5, drawY + 8, 1, 2);
+        ctx.fillRect(drawX + 10, drawY + 8, 1, 2);
+        ctx.fillStyle = theme === "underground" ? "#002fa7" : "#6b5c00";
+        if (walkOffset === 0) {
+            ctx.fillRect(drawX + 1, drawY + 13, 4, 3);
+            ctx.fillRect(drawX + 11, drawY + 13, 4, 3);
         } else {
-            ctx.fillStyle = mainColor;
-            ctx.fillRect(drawX + 2, drawY, 12, 4);
-            ctx.fillRect(drawX, drawY + 4, 16, 4);
-            ctx.fillStyle = "#fcbcb0";
-            ctx.fillRect(drawX + 3, drawY + 8, 10, 5);
-            ctx.fillStyle = "#000";
-            ctx.fillRect(drawX + 5, drawY + 8, 1, 2);
-            ctx.fillRect(drawX + 10, drawY + 8, 1, 2);
-            ctx.fillStyle = theme === "underground" ? "#002fa7" : "#6b5c00";
-            if (walkOffset === 0) {
-                ctx.fillRect(drawX + 1, drawY + 13, 4, 3);
-                ctx.fillRect(drawX + 11, drawY + 13, 4, 3);
-            } else {
-                ctx.fillRect(drawX + 2, drawY + 13, 4, 3);
-                ctx.fillRect(drawX + 10, drawY + 13, 4, 3);
-            }
+            ctx.fillRect(drawX + 2, drawY + 13, 4, 3);
+            ctx.fillRect(drawX + 10, drawY + 13, 4, 3);
         }
     }
 }
@@ -763,7 +693,6 @@ class Block {
         const drawX = Math.floor(this.x - cameraX);
         const drawY = Math.floor(this.y + this.bounceY);
 
-        // 依據不同主題設定顏色
         let groundColor = "#c84c0c";
         let brickColor = "#c84c0c";
         let strokeColor = "#000";
@@ -865,7 +794,7 @@ class Block {
     }
 }
 
-// 關卡庫數據 (一共 9 關)
+// 關卡庫數據 (一共 9 關，回歸經典 Goomba 關卡)
 const STAGES = [
     // 關卡 1-1: 經典新手教學
     {
@@ -882,7 +811,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "                    23242                                      23532                                                            ",
+            "                    2  5  2  4  2                             2  3  5  3  2                                                     ",
             "                                                                                                                                ",
             "                                             67          67                                                                     ",
             "                                             89          89                     11111                                           ",
@@ -891,13 +820,12 @@ const STAGES = [
         ],
         enemies: [
             { x: 220, y: 150, type: "goomba" },
-            { x: 340, y: 100, type: "flying" },
-            { x: 500, y: 150, type: "goomba" },
-            { x: 650, y: 150, type: "rushing" },
-            { x: 800, y: 150, type: "goomba" }
+            { x: 380, y: 150, type: "goomba" },
+            { x: 540, y: 150, type: "goomba" },
+            { x: 700, y: 150, type: "goomba" }
         ]
     },
-    // 關卡 1-2: 飛行天堂
+    // 關卡 1-2: 經典平台
     {
         name: "1-2",
         theme: "overworld",
@@ -912,7 +840,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "         242                     232                     252                                                                    ",
+            "         2  4  2                     2  3  2                     2  5  2                                                        ",
             "                                                                                                                                ",
             "                     67                      67                      67                                                         ",
             "                     89                      89                      89                                                         ",
@@ -920,15 +848,12 @@ const STAGES = [
             " 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 150, y: 60, type: "flying" },
-            { x: 300, y: 50, type: "flying" },
-            { x: 450, y: 70, type: "flying" },
-            { x: 600, y: 60, type: "flying" },
-            { x: 750, y: 50, type: "flying" },
-            { x: 900, y: 60, type: "flying" }
+            { x: 280, y: 150, type: "goomba" },
+            { x: 480, y: 150, type: "goomba" },
+            { x: 680, y: 150, type: "goomba" }
         ]
     },
-    // 關卡 1-3: 地下突襲
+    // 關卡 1-3: 地下世界
     {
         name: "1-3",
         theme: "underground",
@@ -943,7 +868,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "                  23532                                       242                                                               ",
+            "                  2  3  5  3  2                               2  4  2                                                           ",
             "                                                                                                                                ",
             "                                     67                                                                                         ",
             "                                     89                                                                                         ",
@@ -951,14 +876,12 @@ const STAGES = [
             " 1111111111111111111111111111111111111111111111111      11111111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 200, y: 150, type: "rushing" },
-            { x: 380, y: 150, type: "rushing" },
-            { x: 550, y: 150, type: "goomba" },
-            { x: 700, y: 150, type: "rushing" },
-            { x: 850, y: 150, type: "rushing" }
+            { x: 260, y: 150, type: "goomba" },
+            { x: 500, y: 150, type: "goomba" },
+            { x: 740, y: 150, type: "goomba" }
         ]
     },
-    // 關卡 1-4: 斷崖深淵
+    // 關卡 1-4: 懸崖裂谷
     {
         name: "1-4",
         theme: "underground",
@@ -973,7 +896,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "                 242                232                252                                                                      ",
+            "                 2  4  2                2  3  2                2  5  2                                                          ",
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
@@ -981,13 +904,11 @@ const STAGES = [
             " 1111111111111111111    111111111111111    111111111111111    11111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 250, y: 70, type: "flying" },
-            { x: 420, y: 60, type: "flying" },
-            { x: 600, y: 50, type: "flying" },
-            { x: 750, y: 150, type: "goomba" }
+            { x: 300, y: 150, type: "goomba" },
+            { x: 550, y: 150, type: "goomba" }
         ]
     },
-    // 關卡 1-5: 炸彈開路
+    // 關卡 1-5: 磚牆通道
     {
         name: "1-5",
         theme: "overworld",
@@ -1002,7 +923,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "               242                                      252                                                                     ",
+            "               2  4  2                                      2  5  2                                                             ",
             "                                                                                                                                ",
             "                         2222222                  2222222                                                                       ",
             "                         2222222                  2222222                                                                       ",
@@ -1012,15 +933,11 @@ const STAGES = [
         enemies: [
             { x: 180, y: 150, type: "goomba" },
             { x: 300, y: 100, type: "goomba" },
-            { x: 320, y: 100, type: "goomba" },
-            { x: 340, y: 100, type: "goomba" },
-            { x: 500, y: 100, type: "rushing" },
-            { x: 600, y: 100, type: "goomba" },
-            { x: 620, y: 100, type: "goomba" },
-            { x: 640, y: 100, type: "goomba" }
+            { x: 500, y: 100, type: "goomba" },
+            { x: 600, y: 100, type: "goomba" }
         ]
     },
-    // 關卡 1-6: 高耸水管陣
+    // 關卡 1-6: 水管夾縫
     {
         name: "1-6",
         theme: "overworld",
@@ -1035,7 +952,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "           242                     252                                                                                          ",
+            "           2  4  2                     2  5  2                                                                                  ",
             "                                                                                                                                ",
             "                       67                      67                      67                                                       ",
             "                       89                      89                      89                                                       ",
@@ -1043,14 +960,12 @@ const STAGES = [
             " 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 180, y: 60, type: "flying" },
-            { x: 320, y: 150, type: "rushing" },
-            { x: 420, y: 60, type: "flying" },
-            { x: 580, y: 150, type: "goomba" },
-            { x: 700, y: 60, type: "flying" }
+            { x: 150, y: 150, type: "goomba" },
+            { x: 350, y: 150, type: "goomba" },
+            { x: 550, y: 150, type: "goomba" }
         ]
     },
-    // 關卡 1-7: 星星狂飆奔跑
+    // 關卡 1-7: 地底寶藏
     {
         name: "1-7",
         theme: "underground",
@@ -1065,7 +980,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "                 252                252                252                                                                      ",
+            "                 2  5  2                2  5  2                2  5  2                                                          ",
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
@@ -1073,18 +988,12 @@ const STAGES = [
             " 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 160, y: 150, type: "goomba" },
-            { x: 190, y: 150, type: "rushing" },
-            { x: 250, y: 150, type: "goomba" },
-            { x: 350, y: 150, type: "rushing" },
+            { x: 220, y: 150, type: "goomba" },
             { x: 420, y: 150, type: "goomba" },
-            { x: 480, y: 150, type: "rushing" },
-            { x: 600, y: 150, type: "goomba" },
-            { x: 700, y: 150, type: "rushing" },
-            { x: 800, y: 150, type: "goomba" }
+            { x: 620, y: 150, type: "goomba" }
         ]
     },
-    // 關卡 1-8: 險峻浮島
+    // 關卡 1-8: 浮動小島
     {
         name: "1-8",
         theme: "overworld",
@@ -1099,7 +1008,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "             242                     252                                                                                        ",
+            "             2  4  2                     2  5  2                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
@@ -1107,14 +1016,12 @@ const STAGES = [
             " 111111111       111111111       111111111       111111111       11111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 180, y: 60, type: "flying" },
-            { x: 320, y: 50, type: "flying" },
-            { x: 460, y: 60, type: "flying" },
-            { x: 600, y: 50, type: "flying" },
-            { x: 750, y: 150, type: "rushing" }
+            { x: 200, y: 150, type: "goomba" },
+            { x: 500, y: 150, type: "goomba" },
+            { x: 800, y: 150, type: "goomba" }
         ]
     },
-    // 關卡 1-9: 庫巴魔王城堡 (岩漿大關卡)
+    // 關卡 1-9: 庫巴大城堡
     {
         name: "1-9",
         theme: "castle",
@@ -1129,7 +1036,7 @@ const STAGES = [
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
-            "                 242                252                232                                                                      ",
+            "                 2  4  2                2  5  2                2  3  2                                                          ",
             "                                                                                                                                ",
             "                                                                                                                                ",
             "                                                                                                                                ",
@@ -1137,13 +1044,10 @@ const STAGES = [
             " 11111111111111111     11111111111111     11111111111111     111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 140, y: 150, type: "rushing" },
-            { x: 260, y: 60, type: "flying" },
-            { x: 380, y: 150, type: "rushing" },
-            { x: 500, y: 50, type: "flying" },
-            { x: 620, y: 150, type: "rushing" },
-            { x: 740, y: 150, type: "goomba" },
-            { x: 800, y: 150, type: "rushing" }
+            { x: 220, y: 150, type: "goomba" },
+            { x: 420, y: 150, type: "goomba" },
+            { x: 620, y: 150, type: "goomba" },
+            { x: 800, y: 150, type: "goomba" }
         ]
     }
 ];
@@ -1176,7 +1080,6 @@ class Game {
     }
 
     init() {
-        // 重設狀態，但保留累計分數和金幣 (在關卡轉換時)
         this.timeLeft = 400;
         this.cameraX = 0;
         this.isGameOver = false;
@@ -1188,12 +1091,10 @@ class Game {
         this.particles = [];
         this.floatingTexts = [];
 
-        // 載入當前關卡配置
         const currentStage = STAGES[this.currentStageIndex];
         const levelData = currentStage.map;
         this.mapWidth = levelData[0].length * TILE_SIZE;
 
-        // 解析地圖
         for (let row = 0; row < levelData.length; row++) {
             for (let col = 0; col < levelData[row].length; col++) {
                 const char = levelData[row][col];
@@ -1222,20 +1123,16 @@ class Game {
             }
         }
 
-        // 建立玩家
         const prevSuper = this.player ? this.player.isSuper : false;
         this.player = new Player(30, 100);
-        if (prevSuper) this.player.grow(); // 繼承上一關的大小
+        if (prevSuper) this.player.grow();
 
-        // 生成敵人
         for (let eData of currentStage.enemies) {
-            this.enemies.push(new Enemy(eData.x, eData.y, eData.type));
+            this.enemies.push(new Enemy(eData.x, eData.y));
         }
 
-        // 終點位置
         this.flagX = (levelData[0].length - 8) * TILE_SIZE;
 
-        // UI 顯示
         worldVal.textContent = currentStage.name;
         overlayScreen.classList.add("hidden");
     }
@@ -1312,7 +1209,7 @@ class Game {
 
         const theme = STAGES[this.currentStageIndex].theme;
         for (let e of this.enemies) {
-            e.update(this.blocks, this.player);
+            e.update(this.blocks);
 
             if (!this.player.isDead && !e.isDead &&
                 this.player.x < e.x + e.width &&
@@ -1327,21 +1224,11 @@ class Game {
                     this.score += 200;
                     this.floatingTexts.push(new FloatingText(e.x, e.y, "200", "#ff00ff"));
                 } else if (this.player.vy > 0 && this.player.y + this.player.height - this.player.vy <= e.y + 6) {
-                    if (e.type === "flying") {
-                        e.type = "goomba";
-                        e.height = 16;
-                        e.vy = 0;
-                        e.startY = e.y;
-                        this.player.vy = -4.0;
-                        this.score += 200;
-                        this.floatingTexts.push(new FloatingText(e.x, e.y, "200"));
-                    } else {
-                        e.isDead = true;
-                        this.player.vy = -3.5;
-                        this.score += 100;
-                        this.floatingTexts.push(new FloatingText(e.x, e.y, "100"));
-                        this.particles.push(new Particle(e.x + 8, e.y + 8, 0, -1, "#fcbcb0", 4, 0.1, 15));
-                    }
+                    e.isDead = true;
+                    this.player.vy = -3.5;
+                    this.score += 100;
+                    this.floatingTexts.push(new FloatingText(e.x, e.y, "100"));
+                    this.particles.push(new Particle(e.x + 8, e.y + 8, 0, -1, "#fcbcb0", 4, 0.1, 15));
                 } else {
                     this.player.hurt();
                 }
@@ -1360,7 +1247,6 @@ class Game {
         }
         this.floatingTexts = this.floatingTexts.filter(ft => ft.life > 0);
 
-        // 觸碰旗桿：前往下一關或通關
         if (!this.player.isDead && this.player.x >= this.flagX) {
             this.handleStageClear();
         }
@@ -1382,14 +1268,10 @@ class Game {
         this.score += this.timeLeft * 10;
         
         if (this.currentStageIndex < STAGES.length - 1) {
-            // 還有下一關，加載下一關
             this.currentStageIndex++;
             this.init();
-            
-            // 彈出過關提示文字
             this.floatingTexts.push(new FloatingText(this.player.x, this.player.y - 20, "STAGE CLEAR!", "#00ffff"));
         } else {
-            // 9關全部完成，通關
             this.isCleared = true;
             overlayTitle.textContent = "ALL STAGES CLEAR!";
             overlayTitle.style.color = "#ffe000";
@@ -1398,7 +1280,6 @@ class Game {
     }
 
     draw() {
-        // 根據主題改變天色顏色
         const currentStage = STAGES[this.currentStageIndex];
         if (currentStage.theme === "underground") {
             ctx.fillStyle = "#0c0818";
@@ -1409,40 +1290,31 @@ class Game {
         }
         ctx.fillRect(0, 0, 256, 224);
 
-        // 繪製背景
         this.drawBackgroundDecorations(currentStage.theme);
-
-        // 繪製終點
         this.drawFlagpole(currentStage.theme);
 
-        // 繪製方塊
         for (let b of this.blocks) {
             if (b.x + 16 >= this.cameraX && b.x <= this.cameraX + 256) {
                 b.draw(ctx, this.cameraX, currentStage.theme);
             }
         }
 
-        // 繪製道具
         for (let p of this.powerups) {
             p.draw(ctx, this.cameraX);
         }
 
-        // 繪製炸彈
         for (let bm of this.bombs) {
             bm.draw(ctx, this.cameraX);
         }
 
-        // 繪製怪物
         for (let e of this.enemies) {
             if (e.x + 16 >= this.cameraX && e.x <= this.cameraX + 256) {
                 e.draw(ctx, this.cameraX, currentStage.theme);
             }
         }
 
-        // 繪製玩家
         this.player.draw(ctx, this.cameraX);
 
-        // 粒子
         for (let pt of this.particles) {
             pt.draw(ctx, this.cameraX);
         }
@@ -1484,7 +1356,6 @@ class Game {
                 ctx.fill();
             }
         } else if (theme === "underground") {
-            // 地底岩石背景
             ctx.fillStyle = "#2c1e4c";
             for (let i = 0; i < 5; i++) {
                 let rx = (i * 200) - this.cameraX * 0.3;
@@ -1493,7 +1364,6 @@ class Game {
                 ctx.fillRect(rx + 140, 50, 32, 16);
             }
         } else if (theme === "castle") {
-            // 城堡岩漿背景與火焰柱裝飾
             ctx.fillStyle = "#3a060e";
             for (let i = 0; i < 6; i++) {
                 let cx = (i * 180) - this.cameraX * 0.4;
@@ -1501,7 +1371,6 @@ class Game {
                 ctx.fillRect(cx + 80, 50, 20, 80);
             }
 
-            // 繪製底部的滾滾岩漿
             ctx.fillStyle = "#ff2200";
             if (Math.floor(Date.now() / 150) % 2 === 0) {
                 ctx.fillStyle = "#ff5500";

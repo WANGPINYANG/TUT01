@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retro 8-Bit Platformer</title>
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=10">
     <!-- Google Fonts 引入 8-bit 復古字型 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,6 +15,7 @@
         <div class="cabinet-header">
             <h1>RETRO PLATFORMER</h1>
             <div class="subtitle">8-BIT ARCADE CLASSIC</div>
+            <button onclick="localStorage.clear(); sessionStorage.clear(); location.href=location.pathname+'?v='+Math.random();" class="refresh-btn">🎮 點此強制清除快取重整 🎮</button>
         </div>
         
         <div class="screen-container">
@@ -41,10 +42,10 @@
                     <span id="hud-time">400</span>
                 </div>
             </div>
-
+            
             <!-- Canvas 遊戲本體 -->
             <canvas id="gameCanvas" width="256" height="224"></canvas>
-
+            
             <!-- 浮動重啟提示 -->
             <div id="overlay-screen" class="overlay-screen hidden">
                 <div class="overlay-content">
@@ -53,7 +54,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div class="controls-info">
             <div class="key-help">
                 <span class="key">A</span> / <span class="key">D</span> 或 <span class="key">←</span> / <span class="key">→</span> : 移動
@@ -69,7 +70,7 @@
             </div>
         </div>
     </div>
-
-    <script src="game.js?v=4"></script>
+    
+    <script src="game.js?v=10"></script>
 </body>
 </html>
