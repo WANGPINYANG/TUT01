@@ -1408,7 +1408,7 @@ class Game {
         } else {
             ctx.fillStyle = "#5c94fc";
         }
-        ctx.fillRect(0, 0, 256, 224);
+        ctx.fillRect(0, 0, 256, 256);
 
         this.drawBackgroundDecorations(currentStage.theme);
         this.drawFlagpole(currentStage.theme);

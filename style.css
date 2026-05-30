@@ -97,7 +97,7 @@ body {
 /* Canvas 遊戲本體 (使用 pixelated 渲染以防模糊) */
 #gameCanvas {
     width: 640px;
-    height: 560px;
+    height: 640px;
     display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
