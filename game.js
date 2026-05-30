@@ -307,18 +307,34 @@ class Powerup {
     }
 }
 
-// 敵人 (經典 Goomba)
+// 敵人類別 (包含 Goomba, 飛行, 突襲三種類型)
 class Enemy {
-    constructor(x, y) {
+    constructor(x, y, type = "goomba") {
         this.x = x;
         this.y = y;
         this.width = 16;
         this.height = 16;
-        this.vx = -0.5;
+        this.type = type; // "goomba", "flying", "rushing"
+        
+        if (this.type === "rushing") {
+            this.vx = -0.3;
+        } else if (this.type === "flying") {
+            this.vx = -0.6;
+        } else {
+            this.vx = -0.5;
+        }
+        
         this.vy = 0;
         this.isDead = false;
         this.deadTimer = 0;
         this.walkFrame = 0;
+        
+        // 飛行怪浮動與初始高度
+        this.startY = y;
+        this.bobTimer = Math.random() * Math.PI * 2;
+        
+        // 突襲怪衝鋒狀態
+        this.isRushing = false;
     }
 
     update(blocks) {
@@ -334,11 +350,42 @@ class Enemy {
 
         this.walkFrame = (this.walkFrame + 0.1) % 2;
 
-        this.vy += GRAVITY;
-        this.x += this.vx;
-        this.resolveBlockCollisions(blocks, "horizontal");
-        this.y += this.vy;
-        this.resolveBlockCollisions(blocks, "vertical");
+        if (this.type === "flying") {
+            // 飛行怪呈正弦波規律上下漂浮，並左右移動，忽略地圖重力與碰撞，除非被踩
+            this.bobTimer += 0.05;
+            this.y = this.startY + Math.sin(this.bobTimer) * 16;
+            this.x += this.vx;
+            this.resolveBlockCollisions(blocks, "horizontal");
+        } else if (this.type === "rushing") {
+            // 突襲怪：如果玩家在附近且高度相近，發動極速衝鋒
+            const player = gameInstance.player;
+            if (player && !player.isDead) {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                if (Math.abs(dx) < 120 && Math.abs(dy) < 40) {
+                    this.isRushing = true;
+                    this.vx = dx > 0 ? 1.5 : -1.5;
+                } else {
+                    if (this.isRushing) {
+                        this.isRushing = false;
+                        this.vx = this.vx > 0 ? 0.3 : -0.3;
+                    }
+                }
+            }
+            
+            this.vy += GRAVITY;
+            this.x += this.vx;
+            this.resolveBlockCollisions(blocks, "horizontal");
+            this.y += this.vy;
+            this.resolveBlockCollisions(blocks, "vertical");
+        } else {
+            // 經典 Goomba
+            this.vy += GRAVITY;
+            this.x += this.vx;
+            this.resolveBlockCollisions(blocks, "horizontal");
+            this.y += this.vy;
+            this.resolveBlockCollisions(blocks, "vertical");
+        }
     }
 
     resolveBlockCollisions(blocks, direction) {
@@ -357,6 +404,9 @@ class Enemy {
                     if (this.vy > 0) {
                         this.y = b.y - this.height;
                         this.vy = 0;
+                        if (this.type === "flying") {
+                            this.startY = this.y; // 飛行怪修正初始高度
+                        }
                     } else if (this.vy < 0) {
                         this.y = b.y + b.height;
                         this.vy = 0;
@@ -392,16 +442,38 @@ class Enemy {
 
     drawEntity(ctx, drawX, drawY, theme) {
         const walkOffset = Math.floor(this.walkFrame) === 0 ? 0 : 1;
-        const mainColor = theme === "underground" ? "#0088fc" : "#c84c0c";
+        let mainColor = theme === "underground" ? "#0088fc" : "#c84c0c";
 
+        if (this.type === "rushing") {
+            if (this.isRushing && Math.floor(Date.now() / 80) % 2 === 0) {
+                mainColor = "#ff2200"; // 衝鋒時閃爍紅色
+            } else {
+                mainColor = "#a81000"; // 突襲怪暗紅色殼
+            }
+        }
+
+        // 繪製身體
         ctx.fillStyle = mainColor;
-        ctx.fillRect(drawX + 2, drawY, 12, 4);
-        ctx.fillRect(drawX, drawY + 4, 16, 4);
+        if (this.type === "rushing") {
+            ctx.fillRect(drawX + 1, drawY + 4, 14, 9);
+            ctx.fillRect(drawX + 3, drawY + 2, 10, 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(drawX + 7, drawY, 2, 2);
+            ctx.fillRect(drawX + 3, drawY + 4, 2, 2);
+            ctx.fillRect(drawX + 11, drawY + 4, 2, 2);
+        } else {
+            ctx.fillRect(drawX + 2, drawY, 12, 4);
+            ctx.fillRect(drawX, drawY + 4, 16, 4);
+        }
+        
+        // 繪製臉部
         ctx.fillStyle = "#fcbcb0";
         ctx.fillRect(drawX + 3, drawY + 8, 10, 5);
         ctx.fillStyle = "#000";
         ctx.fillRect(drawX + 5, drawY + 8, 1, 2);
         ctx.fillRect(drawX + 10, drawY + 8, 1, 2);
+        
+        // 繪製腳部
         ctx.fillStyle = theme === "underground" ? "#002fa7" : "#6b5c00";
         if (walkOffset === 0) {
             ctx.fillRect(drawX + 1, drawY + 13, 4, 3);
@@ -409,6 +481,17 @@ class Enemy {
         } else {
             ctx.fillRect(drawX + 2, drawY + 13, 4, 3);
             ctx.fillRect(drawX + 10, drawY + 13, 4, 3);
+        }
+
+        // 繪製翅膀 (飛行怪特有)
+        if (this.type === "flying") {
+            const flapOffset = Math.sin(Date.now() / 80) > 0 ? -3 : 1;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(drawX - 5, drawY + 2 + flapOffset, 5, 5);
+            ctx.fillRect(drawX + 16, drawY + 2 + flapOffset, 5, 5);
+            ctx.fillStyle = "#d0d0d0";
+            ctx.fillRect(drawX - 3, drawY + 4 + flapOffset, 3, 3);
+            ctx.fillRect(drawX + 16, drawY + 4 + flapOffset, 3, 3);
         }
     }
 }
@@ -819,10 +902,12 @@ const STAGES = [
             " 111111111111111111111111111111111111111111111111   111111111111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 220, y: 150, type: "goomba" },
-            { x: 380, y: 150, type: "goomba" },
-            { x: 540, y: 150, type: "goomba" },
-            { x: 700, y: 150, type: "goomba" }
+            { x: 200, y: 150, type: "goomba" },
+            { x: 320, y: 100, type: "flying" },
+            { x: 420, y: 150, type: "goomba" },
+            { x: 550, y: 150, type: "rushing" },
+            { x: 680, y: 100, type: "flying" },
+            { x: 800, y: 150, type: "goomba" }
         ]
     },
     // 關卡 1-2: 經典平台
@@ -848,9 +933,12 @@ const STAGES = [
             " 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 280, y: 150, type: "goomba" },
-            { x: 480, y: 150, type: "goomba" },
-            { x: 680, y: 150, type: "goomba" }
+            { x: 240, y: 150, type: "goomba" },
+            { x: 360, y: 100, type: "flying" },
+            { x: 480, y: 150, type: "rushing" },
+            { x: 600, y: 150, type: "goomba" },
+            { x: 720, y: 100, type: "flying" },
+            { x: 850, y: 150, type: "rushing" }
         ]
     },
     // 關卡 1-3: 地下世界
@@ -876,9 +964,12 @@ const STAGES = [
             " 1111111111111111111111111111111111111111111111111      11111111111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 260, y: 150, type: "goomba" },
-            { x: 500, y: 150, type: "goomba" },
-            { x: 740, y: 150, type: "goomba" }
+            { x: 220, y: 150, type: "goomba" },
+            { x: 340, y: 100, type: "flying" },
+            { x: 450, y: 150, type: "rushing" },
+            { x: 580, y: 150, type: "goomba" },
+            { x: 700, y: 100, type: "flying" },
+            { x: 820, y: 150, type: "rushing" }
         ]
     },
     // 關卡 1-4: 懸崖裂谷
@@ -904,8 +995,12 @@ const STAGES = [
             " 1111111111111111111    111111111111111    111111111111111    11111111111111111111111111111111111111111111111111111111111111111 "
         ],
         enemies: [
-            { x: 300, y: 150, type: "goomba" },
-            { x: 550, y: 150, type: "goomba" }
+            { x: 180, y: 150, type: "rushing" },
+            { x: 280, y: 100, type: "flying" },
+            { x: 400, y: 150, type: "goomba" },
+            { x: 520, y: 100, type: "flying" },
+            { x: 650, y: 150, type: "rushing" },
+            { x: 780, y: 150, type: "goomba" }
         ]
     },
     // 關卡 1-5: 磚牆通道
@@ -932,9 +1027,11 @@ const STAGES = [
         ],
         enemies: [
             { x: 180, y: 150, type: "goomba" },
-            { x: 300, y: 100, type: "goomba" },
-            { x: 500, y: 100, type: "goomba" },
-            { x: 600, y: 100, type: "goomba" }
+            { x: 300, y: 80, type: "flying" },
+            { x: 400, y: 150, type: "rushing" },
+            { x: 500, y: 80, type: "flying" },
+            { x: 600, y: 80, type: "goomba" },
+            { x: 700, y: 150, type: "rushing" }
         ]
     },
     // 關卡 1-6: 水管夾縫
@@ -961,8 +1058,11 @@ const STAGES = [
         ],
         enemies: [
             { x: 150, y: 150, type: "goomba" },
-            { x: 350, y: 150, type: "goomba" },
-            { x: 550, y: 150, type: "goomba" }
+            { x: 280, y: 90, type: "flying" },
+            { x: 380, y: 150, type: "rushing" },
+            { x: 500, y: 90, type: "flying" },
+            { x: 620, y: 150, type: "goomba" },
+            { x: 750, y: 150, type: "rushing" }
         ]
     },
     // 關卡 1-7: 地底寶藏
@@ -989,8 +1089,11 @@ const STAGES = [
         ],
         enemies: [
             { x: 220, y: 150, type: "goomba" },
-            { x: 420, y: 150, type: "goomba" },
-            { x: 620, y: 150, type: "goomba" }
+            { x: 340, y: 90, type: "flying" },
+            { x: 460, y: 150, type: "rushing" },
+            { x: 580, y: 150, type: "goomba" },
+            { x: 700, y: 90, type: "flying" },
+            { x: 820, y: 150, type: "rushing" }
         ]
     },
     // 關卡 1-8: 浮動小島
@@ -1017,8 +1120,11 @@ const STAGES = [
         ],
         enemies: [
             { x: 200, y: 150, type: "goomba" },
-            { x: 500, y: 150, type: "goomba" },
-            { x: 800, y: 150, type: "goomba" }
+            { x: 320, y: 80, type: "flying" },
+            { x: 450, y: 150, type: "rushing" },
+            { x: 580, y: 80, type: "flying" },
+            { x: 700, y: 150, type: "goomba" },
+            { x: 820, y: 150, type: "rushing" }
         ]
     },
     // 關卡 1-9: 庫巴大城堡
@@ -1045,9 +1151,12 @@ const STAGES = [
         ],
         enemies: [
             { x: 220, y: 150, type: "goomba" },
-            { x: 420, y: 150, type: "goomba" },
-            { x: 620, y: 150, type: "goomba" },
-            { x: 800, y: 150, type: "goomba" }
+            { x: 320, y: 80, type: "flying" },
+            { x: 420, y: 150, type: "rushing" },
+            { x: 520, y: 80, type: "flying" },
+            { x: 620, y: 150, type: "rushing" },
+            { x: 720, y: 80, type: "flying" },
+            { x: 820, y: 150, type: "goomba" }
         ]
     }
 ];
@@ -1128,7 +1237,7 @@ class Game {
         if (prevSuper) this.player.grow();
 
         for (let eData of currentStage.enemies) {
-            this.enemies.push(new Enemy(eData.x, eData.y));
+            this.enemies.push(new Enemy(eData.x, eData.y, eData.type || "goomba"));
         }
 
         this.flagX = (levelData[0].length - 8) * TILE_SIZE;
@@ -1224,11 +1333,22 @@ class Game {
                     this.score += 200;
                     this.floatingTexts.push(new FloatingText(e.x, e.y, "200", "#ff00ff"));
                 } else if (this.player.vy > 0 && this.player.y + this.player.height - this.player.vy <= e.y + 6) {
-                    e.isDead = true;
-                    this.player.vy = -3.5;
-                    this.score += 100;
-                    this.floatingTexts.push(new FloatingText(e.x, e.y, "100"));
-                    this.particles.push(new Particle(e.x + 8, e.y + 8, 0, -1, "#fcbcb0", 4, 0.1, 15));
+                    if (e.type === "flying") {
+                        e.type = "goomba";
+                        e.vx = e.vx > 0 ? 0.5 : -0.5;
+                        this.player.vy = -3.5;
+                        this.score += 100;
+                        this.floatingTexts.push(new FloatingText(e.x, e.y, "WINGLESS!", "#ffffff"));
+                        for (let i = 0; i < 4; i++) {
+                            this.particles.push(new Particle(e.x + 8, e.y + 4, (Math.random() - 0.5) * 2, -2, "#ffffff", 3, 0.1, 15));
+                        }
+                    } else {
+                        e.isDead = true;
+                        this.player.vy = -3.5;
+                        this.score += 100;
+                        this.floatingTexts.push(new FloatingText(e.x, e.y, "100"));
+                        this.particles.push(new Particle(e.x + 8, e.y + 8, 0, -1, "#fcbcb0", 4, 0.1, 15));
+                    }
                 } else {
                     this.player.hurt();
                 }
