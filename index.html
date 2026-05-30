@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro 8-Bit Platformer</title>
+    <link rel="stylesheet" href="style.css?v=4">
+    <!-- Google Fonts 引入 8-bit 復古字型 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="arcade-cabinet">
+        <div class="cabinet-header">
+            <h1>RETRO PLATFORMER</h1>
+            <div class="subtitle">8-BIT ARCADE CLASSIC</div>
+        </div>
+        
+        <div class="screen-container">
+            <!-- CRT 掃描線與暗角濾鏡效果 -->
+            <div class="crt-overlay"></div>
+            <div class="scanlines"></div>
+            
+            <!-- 遊戲 UI Overlay -->
+            <div class="hud">
+                <div class="hud-item">
+                    <span class="hud-label">PLAYER</span>
+                    <span id="hud-score">000000</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">COINS</span>
+                    <span id="hud-coins">x00</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">WORLD</span>
+                    <span class="hud-val">1-1</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">TIME</span>
+                    <span id="hud-time">400</span>
+                </div>
+            </div>
+
+            <!-- Canvas 遊戲本體 -->
+            <canvas id="gameCanvas" width="256" height="224"></canvas>
+
+            <!-- 浮動重啟提示 -->
+            <div id="overlay-screen" class="overlay-screen hidden">
+                <div class="overlay-content">
+                    <h2 id="overlay-title">GAME OVER</h2>
+                    <p class="blink">PRESS 'R' TO RESTART</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-info">
+            <div class="key-help">
+                <span class="key">A</span> / <span class="key">D</span> 或 <span class="key">←</span> / <span class="key">→</span> : 移動
+            </div>
+            <div class="key-help">
+                <span class="key">W</span> / <span class="key">Space</span> 或 <span class="key">↑</span> : 跳躍
+            </div>
+            <div class="key-help">
+                <span class="key">J</span> / <span class="key">Shift</span> : 投擲炸彈
+            </div>
+            <div class="key-help">
+                <span class="key">R</span> : 重新開始
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js?v=4"></script>
+</body>
+</html>
